@@ -1,0 +1,30 @@
+[project]
+name = "notes12"
+version = "0.1.0"
+description = "Discord-based AI note-taking system (V0 setup only)"
+readme = "README.md"
+authors = [
+    { name = "Atish Mondi", email = "atishmondi@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "google-genai>=2.23.0",
+    "pydantic>=2.13.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

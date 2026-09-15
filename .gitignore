@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage*
+coverage.xml
+
+# Virtual environments / uv
+.venv/
+uv.lock.tmp
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Env / secrets (V0 has no secrets yet, but keep safe)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
