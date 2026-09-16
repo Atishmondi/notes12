@@ -18,7 +18,27 @@ Explicitly NOT in V0:
 
 We are building incrementally. V0 Step 3 adds the first working pipeline:
 raw text → Gemini structured output → Pydantic-validated `Notes12Document`.
-No retry, Discord, frontend, database, or image input yet.
+No retry, frontend, database, or image input yet. V1 adds the minimal Discord bot described below.
+
+## V1 scope (minimal Discord bot)
+
+V1 connects the existing V0 pipeline to Discord with one text command:
+
+```text
+!notes <text>
+```
+
+Flow: Discord user → `!notes <text>` → `extract_notes(text)` → Discord reply
+with `Title`, `Summary`, and `Map type`.
+
+V1 adds only:
+
+- `discord.py` dependency
+- `src/notes12/discord_bot.py` (thin layer over `extract_notes()`)
+- `DISCORD_BOT_TOKEN` configuration
+- offline tests in `tests/test_discord_bot.py`
+
+No slash commands, frontend, database, image input, or extraction changes.
 
 ## Stack
 
@@ -26,6 +46,7 @@ No retry, Discord, frontend, database, or image input yet.
 - [uv](https://docs.astral.sh/uv/) for project / dependency management
 - [Pydantic v2](https://docs.pydantic.dev/) for schema / data validation
 - [google-genai](https://github.com/googleapis/python-genai) (official Google Gen AI SDK) for Gemini
+- [discord.py](https://discordpy.readthedocs.io/) for the minimal V1 Discord bot
 - [pytest](https://docs.pytest.org/) for testing
 - [Ruff](https://docs.astral.sh/ruff/) via `uv check` / `uv format` for lint / format
 
@@ -39,11 +60,13 @@ No retry, Discord, frontend, database, or image input yet.
 ├── src/notes12/        # backend package
 │   ├── __init__.py
 │   ├── schema.py       # LOCKED Notes12 Pydantic contract
-│   └── extractor.py    # Gemini structured extraction (text → Notes12Document)
+│   ├── extractor.py    # Gemini structured extraction (text → Notes12Document)
+│   └── discord_bot.py  # V1 thin Discord layer (!notes → extract_notes → reply)
 ├── tests/              # pytest tests (offline; Gemini calls are mocked)
 │   ├── test_setup.py
 │   ├── test_schema.py
-│   └── test_extractor.py
+│   ├── test_extractor.py
+│   └── test_discord_bot.py  # V1 offline tests (extraction boundary faked)
 └── README.md
 ```
 
@@ -78,6 +101,47 @@ Failures (missing key, empty input, API error, invalid model output) raise
 (default 2, i.e. up to 3 attempts) with exponential backoff
 (`retry_base_delay * 2**n` seconds, default base 1s); auth/config errors
 are never retried. Tests never hit the network: they inject a fake client.
+
+## Discord bot setup (V1)
+
+Required environment variables:
+
+- `GEMINI_API_KEY` — existing V0 extraction key
+- `DISCORD_BOT_TOKEN` — Discord bot token (placeholder only in `.env.example`)
+
+```bash
+export GEMINI_API_KEY="your-key-here"
+export DISCORD_BOT_TOKEN="your-discord-bot-token-here"
+```
+
+The bot needs the **Message Content Intent** enabled in the Discord Developer
+Portal (Bot → Privileged Gateway Intents), otherwise `!notes` cannot read
+command text.
+
+Run locally:
+
+```bash
+uv sync
+uv run python -m notes12.discord_bot
+```
+
+Use in any channel the bot can read/send in:
+
+```text
+!notes Photosynthesis converts light energy into chemical energy...
+```
+
+The bot replies with:
+
+```text
+Title: ...
+Summary: ...
+Map type: ...
+```
+
+Empty input (`!notes` with no text) replies with usage help. Extraction
+failures reply with a short friendly message and never expose keys,
+stack traces, or raw model output.
 
 ## Manual smoke test (real API, local only)
 
