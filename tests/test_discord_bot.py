@@ -10,6 +10,7 @@ from typing import Any, cast
 from notes12.discord_bot import (
     FAILURE_MESSAGE,
     USAGE_MESSAGE,
+    build_notes_embed,
     create_bot,
     format_notes_reply,
     handle_notes_text,
@@ -100,9 +101,22 @@ def test_resolve_discord_token_prefers_explicit_and_strips(monkeypatch):
 class FakeCtx:
     def __init__(self) -> None:
         self.sent: list[str] = []
+        self.embeds: list[Any] = []
 
-    async def send(self, message: str) -> None:
-        self.sent.append(message)
+    async def send(self, content: str | None = None, *, embed: Any = None) -> None:
+        if embed is not None:
+            self.embeds.append(embed)
+        if content is not None:
+            self.sent.append(content)
+
+
+def test_build_notes_embed_contains_title_summary_map_type():
+    embed = build_notes_embed(make_doc())
+    assert embed.title == "Photosynthesis"
+    assert embed.description == "How plants convert light into energy."
+    assert len(embed.fields) == 1
+    assert embed.fields[0].name == "Map type"
+    assert embed.fields[0].value == "hierarchy"
 
 
 def test_bot_registers_notes_command_and_replies(monkeypatch):
@@ -113,8 +127,11 @@ def test_bot_registers_notes_command_and_replies(monkeypatch):
     ctx = FakeCtx()
     cmd = bot.all_commands["notes"]
     asyncio.run(cast(Any, cmd.callback)(ctx, text="Photosynthesis converts light energy..."))
-    assert len(ctx.sent) == 1
-    assert ctx.sent[0].startswith("Title: Photosynthesis")
+    assert ctx.sent == []
+    assert len(ctx.embeds) == 1
+    assert ctx.embeds[0].title == "Photosynthesis"
+    assert ctx.embeds[0].description == "How plants convert light into energy."
+    assert ctx.embeds[0].fields[0].value == "hierarchy"
 
 
 def test_bot_notes_command_with_empty_text_sends_usage():
@@ -122,6 +139,7 @@ def test_bot_notes_command_with_empty_text_sends_usage():
     ctx = FakeCtx()
     asyncio.run(cast(Any, bot.all_commands["notes"].callback)(ctx, text="   "))
     assert ctx.sent == [USAGE_MESSAGE]
+    assert ctx.embeds == []
 
 
 def test_bot_notes_command_maps_extraction_error():
@@ -132,3 +150,4 @@ def test_bot_notes_command_maps_extraction_error():
     ctx = FakeCtx()
     asyncio.run(cast(Any, bot.all_commands["notes"].callback)(ctx, text="real input"))
     assert ctx.sent == [FAILURE_MESSAGE]
+    assert ctx.embeds == []

@@ -26,6 +26,13 @@ def format_notes_reply(document: Notes12Document) -> str:
     return f"Title: {document.title}\nSummary: {document.summary}\nMap type: {document.map_type}"
 
 
+def build_notes_embed(document: Notes12Document) -> discord.Embed:
+    """Build a Discord embed for a validated document (title/summary/map type)."""
+    embed = discord.Embed(title=document.title, description=document.summary)
+    embed.add_field(name="Map type", value=document.map_type, inline=False)
+    return embed
+
+
 def handle_notes_text(text: object, *, extract_fn: ExtractFn = extract_notes) -> str:
     """Offline-testable !notes handler: validate input, extract, format.
 
@@ -56,7 +63,15 @@ def create_bot(*, extract_fn: ExtractFn = extract_notes) -> commands.Bot:
 
     @bot.command(name="notes")
     async def notes(ctx: commands.Context, *, text: str = "") -> None:
-        await ctx.send(handle_notes_text(text, extract_fn=extract_fn))
+        if not isinstance(text, str) or not text.strip():
+            await ctx.send(USAGE_MESSAGE)
+            return
+        try:
+            document = extract_fn(text)
+        except GeminiExtractionError:
+            await ctx.send(FAILURE_MESSAGE)
+            return
+        await ctx.send(embed=build_notes_embed(document))
 
     return bot
 

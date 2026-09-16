@@ -131,13 +131,11 @@ Use in any channel the bot can read/send in:
 !notes Photosynthesis converts light energy into chemical energy...
 ```
 
-The bot replies with:
+The bot replies with a Discord embed:
 
-```text
-Title: ...
-Summary: ...
-Map type: ...
-```
+- embed title: document title
+- embed description: summary
+- `Map type` field: map type
 
 Empty input (`!notes` with no text) replies with usage help. Extraction
 failures reply with a short friendly message and never expose keys,
